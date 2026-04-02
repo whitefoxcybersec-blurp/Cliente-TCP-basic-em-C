@@ -1,103 +1,113 @@
-# Projeto Black Hat Python SSH
+# Clientes TCP e UDP em C (Multiplataforma)
 
-Este projeto explora implementações de ferramentas SSH em Python, inspiradas no livro *Black Hat Python* [1]. Ele demonstra a criação de um cliente SSH básico, um reverse shell (agente) e um servidor SSH (Centro de Comando e Controle - C2), utilizando a biblioteca `paramiko`.
+Este repositório contém implementações de clientes TCP e UDP em C, projetados para funcionar tanto em sistemas **Linux/Unix** quanto em **Windows**. O objetivo é explorar os fundamentos da comunicação de rede de baixo nível usando sockets, com foco na portabilidade e no tratamento de erros.
 
 ## ⚠️ Aviso de Segurança e Uso Ético
 
-As ferramentas contidas neste projeto são para **fins educacionais e de pesquisa em segurança cibernética apenas**. O uso indevido dessas ferramentas para atividades ilegais ou não autorizadas é estritamente proibido e pode resultar em sérias consequências legais. Sempre obtenha permissão explícita antes de testar qualquer sistema.
+Este código é para **fins educacionais** e para entender os fundamentos da programação de rede. Não deve ser usado em ambientes de produção sem auditoria de segurança rigorosa. Sempre obtenha permissão explícita antes de testar qualquer sistema.
 
 ## Pré-requisitos
 
-*   Python 3.x
-*   Biblioteca `paramiko`
+Para compilar e executar este código, você precisará de um compilador C:
 
-## Instalação
+*   **Linux/macOS**: `GCC` (geralmente já vem pré-instalado ou pode ser instalado via gerenciador de pacotes).
+*   **Windows**: `MinGW-w64` (recomendado para integração com VS Code) ou `Visual Studio Build Tools`.
 
-Para instalar a biblioteca `paramiko`, utilize `pip`:
+## Configuração do Ambiente (Windows)
 
-```bash
-sudo pip3 install paramiko
-```
+Se você está no Windows e usando o VS Code, siga este guia para configurar o `MinGW-w64` e o IntelliSense:
 
-## Componentes do Projeto
+1.  **Instalar MinGW-w64 via MSYS2**: Siga o guia `msys2_gcc_install_guide.md` para baixar o MSYS2 e instalar o `mingw-w64-ucrt-x86_64-toolchain`.
+2.  **Adicionar ao PATH**: Certifique-se de que o caminho `C:\msys64\ucrt64\bin` (ou o diretório `bin` da sua instalação MinGW) está adicionado às variáveis de ambiente do sistema.
+3.  **Configurar IntelliSense no VS Code**: Se as linhas vermelhas persistirem, siga o guia `vscode_manual_intellisense_fix.md` para configurar manualmente o `c_cpp_properties.json`.
 
-O projeto é composto por três scripts principais:
+## Compilação
 
-1.  **`ssh_client_improved.py`**: Um cliente SSH simples para executar comandos em um servidor SSH remoto.
-2.  **`reverse_shell_improved.py`**: Um agente de reverse shell que se conecta a um servidor SSH (C2) e executa comandos recebidos localmente.
-3.  **`ssh_server_improved.py`**: Um servidor SSH que atua como um Centro de Comando e Controle (C2), aceitando conexões de agentes de reverse shell e enviando comandos.
+### Linux/macOS
 
-### 1. Cliente SSH Simples (`ssh_client_improved.py`)
+Abra um terminal na pasta do projeto e use o `gcc`:
 
-Este script permite que você se conecte a um servidor SSH padrão (como um servidor Linux) e execute um único comando, recebendo sua saída. É uma versão aprimorada do cliente SSH básico, com tratamento de erros e validação de entrada.
+*   **Cliente TCP**:
+    ```bash
+gcc -o cliente_tcp tcp_client_cross_platform.c
+    ```
+*   **Cliente UDP**:
+    ```bash
+gcc -o cliente_udp udp_client_cross_platform.c
+    ```
 
-**Uso:**
+### Windows (com MinGW-w64)
 
-```bash
-python3 ssh_client_improved.py
-```
+Abra o terminal (PowerShell ou Prompt de Comando) na pasta do projeto e use o `gcc`, **incluindo a biblioteca Winsock**:
 
-O script solicitará o IP, porta, usuário, senha e o comando a ser executado. Você também pode fornecer esses argumentos diretamente:
+*   **Cliente TCP**:
+    ```bash
+gcc -o cliente_tcp.exe tcp_client_cross_platform.c -lws2_32
+    ```
+*   **Cliente UDP**:
+    ```bash
+gcc -o cliente_udp.exe udp_client_cross_platform.c -lws2_32
+    ```
 
-```bash
-python3 ssh_client_improved.py -i <IP_DO_SERVIDOR> -p <PORTA> -u <USUARIO> -P <SENHA> -c "ls -la"
-```
+## Uso
 
-### 2. Agente de Reverse Shell (`reverse_shell_improved.py`)
+### Cliente TCP (`cliente_tcp` ou `cliente_tcp.exe`)
 
-Este script deve ser executado na máquina "alvo". Ele se conecta a um servidor SSH (o C2) e aguarda comandos para executar localmente. A saída dos comandos é enviada de volta para o C2.
-
-**Uso:**
-
-```bash
-python3 reverse_shell_improved.py -i <IP_DO_C2> -p <PORTA_DO_C2> -u <USUARIO_C2> -P <SENHA_C2> [--pty]
-```
-
-*   `<IP_DO_C2>`: Endereço IP do servidor C2 (onde `ssh_server_improved.py` está rodando).
-*   `<PORTA_DO_C2>`: Porta do servidor C2.
-*   `<USUARIO_C2>`: Usuário para autenticação no C2 (padrão: `tim`).
-*   `<SENHA_C2>`: Senha para autenticação no C2 (padrão: `sekret`).
-*   `--pty`: Opcional. Aloca um pseudo-terminal para a sessão, permitindo um shell mais interativo.
-
-**Exemplo:**
+Este cliente se conecta a um servidor TCP, envia mensagens e recebe respostas.
 
 ```bash
-python3 reverse_shell_improved.py -i 192.168.1.100 -p 2222 -u tim -P sekret --pty
+./cliente_tcp <IP_DO_SERVIDOR> <PORTA>
+# Exemplo:
+./cliente_tcp 127.0.0.1 8080
 ```
 
-### 3. Servidor SSH / Centro de Comando e Controle (C2) (`ssh_server_improved.py`)
+### Cliente UDP (`cliente_udp` ou `cliente_udp.exe`)
 
-Este script deve ser executado na máquina do "atacante". Ele escuta por conexões de agentes de reverse shell, autentica-os e permite que o operador envie comandos para os agentes conectados.
-
-**Antes de rodar:**
-
-O servidor SSH requer uma chave privada RSA. Se o arquivo `test_rsa.key` não existir no mesmo diretório do script, ele será gerado automaticamente na primeira execução.
-
-**Uso:**
+Este cliente envia datagramas para um servidor UDP e pode receber respostas (sem garantia de entrega).
 
 ```bash
-python3 ssh_server_improved.py -i <IP_PARA_ESCUTA> -p <PORTA_PARA_ESCUTA> -u <USUARIO_AUTENTICACAO> -P <SENHA_AUTENTICACAO>
+./cliente_udp <IP_DO_SERVIDOR> <PORTA>
+# Exemplo:
+./cliente_udp 127.0.0.1 8081
 ```
 
-*   `<IP_PARA_ESCUTA>`: IP no qual o servidor irá escutar (padrão: `0.0.0.0` para todas as interfaces).
-*   `<PORTA_PARA_ESCUTA>`: Porta para escuta (padrão: `2222`).
-*   `<USUARIO_AUTENTICACAO>`: Usuário para autenticação dos agentes (padrão: `tim`).
-*   `<SENHA_AUTENTICACAO>`: Senha para autenticação dos agentes (padrão: `sekret`).
+## Testando os Clientes
 
-**Exemplo:**
+Para testar, você precisará de um servidor TCP ou UDP. Você pode usar o `netcat` (nc) para criar um servidor simples:
 
-```bash
-python3 ssh_server_improved.py -i 0.0.0.0 -p 2222 -u tim -P sekret
-```
+*   **Servidor TCP (em outro terminal)**:
+    ```bash
+nc -l -p 8080
+    ```
+*   **Servidor UDP (em outro terminal)**:
+    ```bash
+nc -u -l -p 8081
+    ```
 
-Após iniciar o servidor, ele aguardará conexões. Quando um agente se conectar e autenticar, você poderá interagir com ele através do terminal do C2.
+## Diferenças Chave: TCP vs. UDP
 
-## Considerações de Segurança
+| Característica         | TCP (cliente_tcp)                                   | UDP (cliente_udp)                                     |
+| :--------------------- | :-------------------------------------------------- | :---------------------------------------------------- |
+| **Conexão**            | Orientado à conexão (usa `connect()`)               | Sem conexão (usa `sendto()` e `recvfrom()`)           |
+| **Confiabilidade**     | Garante entrega, ordem e integridade dos dados.     | Não garante entrega, ordem ou integridade.            |
+| **Velocidade**         | Mais lento (devido a mecanismos de controle).       | Mais rápido (devido à simplicidade).                  |
+| **Uso Típico**         | Transferência de arquivos, web, SSH.                | Streaming, jogos online, DNS.                         |
 
-*   **`paramiko.AutoAddPolicy()`**: Todos os scripts utilizam `AutoAddPolicy` para simplificar a conexão. **Isso não é seguro para ambientes de produção**, pois desabilita a verificação de chaves de host e pode expor a ataques Man-in-the-Middle. Em um cenário real, use `paramiko.RejectPolicy()` ou gerencie o `known_hosts` de forma adequada.
-*   **Credenciais Hardcoded**: O servidor C2 utiliza credenciais `tim`/`sekret` por padrão. **Altere-as imediatamente** e considere usar autenticação por chave pública para maior segurança.
-*   **`shell=True` no Reverse Shell**: A execução de comandos com `shell=True` no `subprocess.run` do reverse shell pode ser um risco de injeção de comandos se não for tratada com cuidado. Embora `shlex.split` ajude, é uma área que exige atenção.
+## Arquivos do Projeto
+
+*   `.gitignore`: Configuração para o Git ignorar arquivos compilados e sensíveis.
+*   `README.md`: Este arquivo.
+*   `tcp_client_cross_platform.c`: Código fonte do cliente TCP.
+*   `udp_client_cross_platform.c`: Código fonte do cliente UDP.
+
+**Documentação Detalhada (para referência):**
+*   `tcp_client_c_explanation.md`: Explicação do cliente TCP em C.
+*   `udp_client_c_explanation.md`: Explicação do cliente UDP em C.
+*   `socket_api_differences.md`: Diferenças entre APIs de socket no Windows e Linux.
+*   `msys2_gcc_install_guide.md`: Guia de instalação do MinGW-w64 via MSYS2.
+*   `vscode_manual_intellisense_fix.md`: Guia para configuração manual do IntelliSense no VS Code.
 
 ## Referências
 
-[1] Justin Seitz. *Black Hat Python: Python Programming for Hackers and Pentesters*. No Starch Press, 2014.
+[1] Beej's Guide to Network Programming. Disponível em: <https://beej.us/guide/bgnet/>.
+[2] Microsoft Learn. *Winsock (Windows Sockets)*. Disponível em: <https://learn.microsoft.com/en-us/windows/win32/winsock/winsock-programming-reference-2>.
