@@ -1,0 +1,36 @@
+# Binários e Objetos Compilados
+*.o
+*.obj
+*.exe
+*.dll
+*.lib
+*.so
+*.a
+
+# Arquivos de Debug
+*.pdb
+*.ilk
+*.dSYM
+
+# Arquivos Temporários
+*~
+*.tmp
+*.bak
+*.swp
+
+# Configurações do VS Code (locais)
+.vscode/
+
+# Logs e Saídas
+*.log
+*.out
+
+# Chaves SSH (MUITO IMPORTANTE: NUNCA envie chaves privadas para o Git!)
+test_rsa.key
+
+# Arquivos gerados pelo sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de build (se usar CMake, Make, etc.)
+build/
